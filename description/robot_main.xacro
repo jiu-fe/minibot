@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro"  name="robot">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
     <xacro:include filename = "inertial_macros.xacro" />
 
@@ -13,7 +13,7 @@
     </material>
     
     <material name= "orange">
-        <color rgba= "1 0.35 0 1"/>    
+        <color rgba= "1 0.25 0 1"/>    
     </material>
 
     <material name="cyan">
@@ -56,6 +56,10 @@
         </xacro:inertial_box>
     </link> 
 
+    <gazebo reference="chasis">
+        <material>Gazebo/Black</material>
+    </gazebo>
+
     <!-- left_wheel -->
     <joint name="left_wheel_joint" type="continuous">
         <parent link= "base_link"/>
@@ -80,6 +84,10 @@
             <origin xyz= "0 0 0" rpy= "0 0 0"/>
         </xacro:inertial_cylinder>
     </link> 
+
+    <gazebo reference="left_wheel">
+        <material>Gazebo/Orange</material>
+    </gazebo>
 
     <!-- right_wheel -->
     <joint name="right_wheel_joint" type="continuous">
@@ -106,6 +114,10 @@
         </xacro:inertial_cylinder>
     </link> 
 
+    <gazebo reference="right_wheel">
+        <material>Gazebo/Orange</material>
+    </gazebo>
+
     <!-- caster_wheel -->
     <joint name="caster_wheel_joint" type="fixed">
         <parent link= "chasis"/>
@@ -130,6 +142,11 @@
         </xacro:inertial_sphere>
     </link> 
 
+    <gazebo reference="caster_wheel">
+        <material>Gazebo/Orange</material>
+        <mu1 value= "0.0001"/>
+        <mu2 value= "0.0001"/>
+    </gazebo>
 
 
 </robot>
