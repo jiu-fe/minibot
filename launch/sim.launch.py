@@ -19,6 +19,7 @@ def generate_launch_description():
     )
     
     # Update the path to your custom world file
+    # Remember to remove <uri> in the sdf file
     world_file_path = '/home/yj/ros2_ws/install/minibot/share/minibot/worlds/empty.sdf'
     
     gazebo = IncludeLaunchDescription(

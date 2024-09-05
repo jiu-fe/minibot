@@ -2,7 +2,8 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
     <gazebo>
-        <plugin name="gz::sim::systems::DiffDrive" filename="gz-sim-diff-drive-system">
+        <plugin filename="gz-sim-diff-drive-system" 
+        name="gz::sim::systems::DiffDrive" >
     
             <!-- Wheel Information -->
             <left_joint>left_wheel_joint</left_joint>
@@ -32,7 +33,15 @@
             <publish_wheel_joints>true</publish_wheel_joints>
 
         </plugin>
- 
+
+        <plugin filename="gz-sim-joint-state-publisher-system" 
+        name="gz::sim::systems::JointStatePublisher">
+
+            <!-- Publish -->
+            <topic>joint_states</topic>
+           
+        </plugin>
+
     </gazebo>
     
 </robot>
