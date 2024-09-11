@@ -10,15 +10,17 @@ from launch_ros.actions import Node
 
 # Image Transport Republishers
 # terminal command example: ros2 run image_transport republish raw compressed --ros-args -r in:=/camera/image_raw -r out/compressed:=/camera/image_raw/compressed
-def image_transport_republisher(transport):
+def image_transport_republisher(transport, camera_topics):
+    base_topic = camera_topics.split('/')[-1]
+    
     return Node(
         package='image_transport',
         executable='republish',
-        name=f'image_transport_republish_{transport}',
+        name=f'image_transport_republish_{transport}_{base_topic}',
         arguments=['raw', transport],
         remappings=[
-            ('in', '/camera/image_raw'),
-            (f'out/{transport}', f'/camera/image_raw/{transport}'),
+            ('in', f'/camera/{camera_topics}'),
+            (f'out/{transport}', f'/camera/{camera_topics}/{transport}'),
         ],
     )
 
@@ -42,22 +44,36 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
+
+            # Diffdrive
             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
             '/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
             '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
             '/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model',
-            '/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',  
+            '/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V', 
+
+            # Lidar 
             '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
             '/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
-            '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
-            '/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
+
+            # Camera
+            # '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
+            # '/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
+
+            # RGBD Camera
+            '/camera/depth/image_raw/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
+            '/camera/depth/image_raw/depth_image@sensor_msgs/msg/Image[gz.msgs.Image',
+            '/camera/depth/image_raw/image@sensor_msgs/msg/Image[gz.msgs.Image',
+            '/camera/depth/image_raw/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
         ],
         output='screen'
     )
 
     # Execute Image Transport Republishers
-    image_transports = ['compressed','compressedDepth', 'theora', 'zstd' ]  # Add or remove formats as needed
-    image_republishers = [image_transport_republisher(transport) for transport in image_transports]
+    camera = 'image_raw'
+    depth_camera = 'depth/image_raw'
+    image_transports = ['compressed','compressedDepth', 'theora', 'zstd' ]  
+    image_republishers = [image_transport_republisher(transport, depth_camera) for transport in image_transports]
 
     gazebo = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
