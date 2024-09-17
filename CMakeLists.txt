@@ -17,6 +17,8 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(geometry_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -32,8 +34,19 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+add_executable(velocity_publisher controller/velocity_publisher.cpp)
+ament_target_dependencies(velocity_publisher
+  rclcpp
+  geometry_msgs
+)
+
+install(TARGETS
+  velocity_publisher
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(
-  DIRECTORY config description launch worlds
+  DIRECTORY config description launch worlds controller
   DESTINATION share/${PROJECT_NAME}
 )
 
