@@ -71,7 +71,8 @@ def generate_launch_description():
     
     params = {
         'robot_description': ParameterValue(robot_description_config, value_type=str), 
-        'use_sim_time': use_sim_time
+        'use_sim_time': use_sim_time,
+        'use_ros2_control': use_ros2_control
     }
 
     # robot_state_publisher node
