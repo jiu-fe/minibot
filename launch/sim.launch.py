@@ -57,6 +57,12 @@ def generate_launch_description():
         'config', 
         'gz_params.yaml'
     )
+    twist_mux_params_file = os.path.join(
+        get_package_share_directory(package_name), 
+        'config', 
+        'twist_mux.yaml'
+    )
+
 
     # robot_state_publisher setup
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -173,6 +179,32 @@ def generate_launch_description():
                    robot_controllers],
     )
 
+    twist_mux_node = Node(
+        package="twist_mux",
+        executable="twist_mux",
+        name='twist_mux',
+        output='screen',
+        parameters=[
+            twist_mux_params_file,
+            {'use_stamped': True},
+        ],
+        remappings=[
+            ('cmd_vel_out', 
+             'diff_drive_controller/cmd_vel'),
+        ],
+    )
+
+    twist_stamper_node = Node(
+        package="twist_stamper",
+        executable="twist_stamper",
+        name='twist_stamper',
+        output='screen',
+        remappings=[
+            ('cmd_vel_in', 'cmd_vel_smoothed'),
+            ('cmd_vel_out', 'nav_vel'),
+        ],
+    )
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -210,6 +242,8 @@ def generate_launch_description():
     )
 
     ld.add_action(node_robot_state_publisher)
+    ld.add_action(twist_mux_node)
+    ld.add_action(twist_stamper_node)
     ld.add_action(bridge)
     for republisher in image_republishers:
         ld.add_action(republisher)

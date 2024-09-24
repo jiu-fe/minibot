@@ -27,7 +27,7 @@ def generate_launch_description():
         executable='teleop_node',
         name= 'teleop_node',
         parameters=[joy_params_file],
-        remappings=[('/cmd_vel','/diff_drive_controller/cmd_vel')]
+        remappings=[('/cmd_vel','joy_vel')]
     )   
         
     # Create the launch description and populate

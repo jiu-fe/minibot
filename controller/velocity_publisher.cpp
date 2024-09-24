@@ -44,6 +44,7 @@ int main(int argc, char * argv[])
 
   while (1) {
     command.header.stamp = node->now();
+    command.header.frame_id = "odom";
     publisher->publish(command);
     std::this_thread::sleep_for(50ms);
     rclcpp::spin_some(node);
