@@ -30,44 +30,61 @@ def image_transport_republisher(transport, camera_topics):
 def generate_launch_description():
 
     package_name= 'minibot'
+    package_dir= get_package_share_directory(package_name) 
+
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    use_ros2_control = LaunchConfiguration('use_ros2_control')
+
+    declare_use_sim_time= DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='true',
+        description='If true, use simulated clock'
+    )
+    
+    declare_use_ros2_control = DeclareLaunchArgument(
+        'use_ros2_control',
+        default_value='true',
+        description='If true, use ros2_control'
+    )
 
     # Declare the path to files
     robot_description_xacro_file = os.path.join(
-        get_package_share_directory(package_name),
+        package_dir,
         'description',
         'robot.urdf.xacro'
     )
+
     world_file_path = os.path.join(
-        get_package_share_directory(package_name), 
+        package_dir, 
         'worlds', 
         'playground.sdf'
     )
+
     rviz_config_file_dir = os.path.join(
-        get_package_share_directory(package_name), 
+        package_dir, 
         'config', 
         'gz_sim_config.rviz'
     )
+
     robot_controllers = os.path.join(
-        get_package_share_directory(package_name), 
+        package_dir, 
         'config', 
         'controller.yaml'
     )
+
     gazebo_params_file = os.path.join(
-        get_package_share_directory(package_name), 
+        package_dir, 
         'config', 
         'gz_params.yaml'
     )
+    
     twist_mux_params_file = os.path.join(
-        get_package_share_directory(package_name), 
+        package_dir, 
         'config', 
         'twist_mux.yaml'
     )
 
-
-    # robot_state_publisher setup
-    use_sim_time = LaunchConfiguration('use_sim_time')
-    use_ros2_control = LaunchConfiguration('use_ros2_control')
-    
+    # robot_state_publisher setup    
     robot_description_config = Command ([
         'xacro ', 
         robot_description_xacro_file, 
@@ -93,7 +110,7 @@ def generate_launch_description():
     # format: '<topic_name>@/[/]<ros2_topic_type_name>@/[/]<gazebo_topic_type_name>',
     # ros2 topic type <topic_name> to check topi type_name in ros2
     # gz topic -t <topic_name> -i to check topic type_name in gazebo
-    bridge = Node(
+    node_gz_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
@@ -128,7 +145,7 @@ def generate_launch_description():
     camera = 'image_raw'
     depth_camera = 'depth/image_raw'
     image_transports = ['compressed','compressedDepth', 'theora', 'zstd' ]  
-    image_republishers = [image_transport_republisher(transport, depth_camera) 
+    node_image_republishers = [image_transport_republisher(transport, depth_camera) 
                           for transport in image_transports]
 
     # gz launch world
@@ -144,7 +161,7 @@ def generate_launch_description():
     )
 
     # gz spawn robot entity 
-    gz_spawn_entity = Node(
+    node_gz_spawn_entity = Node(
         package='ros_gz_sim',
         executable='create',
         output='screen',
@@ -155,7 +172,7 @@ def generate_launch_description():
     )
 
     # rviz2 node
-    rviz2 = Node(
+    node_rviz2 = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
@@ -176,10 +193,11 @@ def generate_launch_description():
         executable="spawner",
         arguments=["diff_drive_controller", 
                    "--param-file", 
-                   robot_controllers],
+                   robot_controllers
+        ],
     )
 
-    twist_mux_node = Node(
+    node_twist_mux = Node(
         package="twist_mux",
         executable="twist_mux",
         name='twist_mux',
@@ -194,7 +212,7 @@ def generate_launch_description():
         ],
     )
 
-    twist_stamper_node = Node(
+    node_twist_stamper = Node(
         package="twist_stamper",
         executable="twist_stamper",
         name='twist_stamper',
@@ -205,54 +223,47 @@ def generate_launch_description():
         ],
     )
 
+    register_joint_state_broadcaster_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action= node_gz_spawn_entity,
+            on_exit=[joint_state_broadcaster_spawner],
+        )
+    )
+
+    register_diff_drive_controller_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action= joint_state_broadcaster_spawner,
+            on_exit=[diff_drive_controller_spawner],
+        )
+    )
+
+    group_spawn_gz= GroupAction(
+        [gazebo, 
+         node_gz_spawn_entity,
+        ]
+    )
+
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
     # Add the nodes to the launch description
-    ld.add_action(
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=gz_spawn_entity,
-                on_exit=[joint_state_broadcaster_spawner],
-            )
-        ),
-    )
+    ld.add_action(declare_use_sim_time)
+    ld.add_action(declare_use_ros2_control)
 
-    ld.add_action(
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=joint_state_broadcaster_spawner,
-                on_exit=[diff_drive_controller_spawner],
-            )
-        ),
-    )
-
-    ld.add_action(
-        DeclareLaunchArgument(
-            'use_sim_time',
-            default_value='true',
-            description='If true, use simulated clock'),
-    )
-
-    ld.add_action(
-        DeclareLaunchArgument(
-            'use_ros2_control',
-            default_value='true',
-            description='If true, use ros2_control'),
-    )
+    ld.add_action(register_joint_state_broadcaster_spawner)
+    ld.add_action(register_diff_drive_controller_spawner)
 
     ld.add_action(node_robot_state_publisher)
-    ld.add_action(twist_mux_node)
-    ld.add_action(twist_stamper_node)
-    ld.add_action(bridge)
-    for republisher in image_republishers:
-        ld.add_action(republisher)
-    ld.add_action(GroupAction([gazebo, gz_spawn_entity]))
-    ld.add_action(rviz2)
-    
-   
+    ld.add_action(node_twist_mux)
+    ld.add_action(node_twist_stamper)
+    ld.add_action(node_gz_bridge)
+    for node_republisher in node_image_republishers:
+        ld.add_action(node_republisher)
+    ld.add_action(group_spawn_gz)
+    ld.add_action(node_rviz2)
 
-    # Generate the launch description and 
+    # Generate the launch description  
     return ld
 
     

@@ -46,7 +46,7 @@ install(TARGETS
 )
 
 install(
-  DIRECTORY config description launch worlds controller
+  DIRECTORY config description launch worlds controller maps
   DESTINATION share/${PROJECT_NAME}
 )
 
