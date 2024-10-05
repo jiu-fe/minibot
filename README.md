@@ -1,7 +1,21 @@
-## Robot Package Template
+# minibot
 
-This is a GitHub template. You can make your own copy by clicking the green "Use this template" button.
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-It is recommended that you keep the repo/package name the same, but if you do change it, ensure you do a "Find all" using your IDE (or the built-in GitHub IDE by hitting the `.` key) and rename all instances of `minibot` to whatever your project's name is.
+This repository aims to serve as an example in implementing a fundamental differential drive robot using ROS2 Jazzy Jalisco, with features including gz simulation, ros2_control, teleoperation, slam, navigation2.
 
-Note that each directory currently has at least one file in it to ensure that git tracks the files (and, consequently, that a fresh clone has direcctories present for CMake to find). These example files can be removed if required (and the directories can be removed if `CMakeLists.txt` is adjusted accordingly).
+Install ros2 packages from source:
+    ros_gz (jazzy)
+    ros2_control (master)
+    sllidar_ros2 (main)
+    twist_stamper (main)
+    twist_mux (4.3.0)
+
+Next up:
+    Test the robot in physical world.
+
+TO DO:
+    Include detailed installation instruction for packages install from source. 
+    Include a hardware interface.
+    Setup a launch file to launch the physical robot.
+    
