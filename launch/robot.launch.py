@@ -3,7 +3,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, GroupAction, RegisterEventHandler, DeclareLaunchArgument
+from launch.actions import RegisterEventHandler, DeclareLaunchArgument
 from launch.event_handlers import OnProcessStart
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
@@ -32,15 +32,12 @@ def generate_launch_description():
     package_name= 'minibot'
     package_dir= get_package_share_directory(package_name) 
 
-    # Add launch configurations
     use_sim_time = LaunchConfiguration('use_sim_time')
     use_ros2_control = LaunchConfiguration('use_ros2_control')
-    use_ros2_control_gz_sim = LaunchConfiguration('use_ros2_control_gz_sim')
-
-    # Declare launch arguments
+    
     declare_use_sim_time= DeclareLaunchArgument(
         'use_sim_time',
-        default_value='true',
+        default_value='false',
         description='If true, use simulated clock'
     )
     
@@ -50,23 +47,11 @@ def generate_launch_description():
         description='If true, use ros2_control'
     )
 
-    declare_use_ros2_control_gz_sim = DeclareLaunchArgument(
-        'use_ros2_control_gz_sim',
-        default_value='true',
-        description='If true, use ros2_control in gz_sim'
-    )
-
     # Declare the path to files
     robot_description_xacro_file = os.path.join(
         package_dir,
         'description',
         'robot.urdf.xacro'
-    )
-
-    world_file_path = os.path.join(
-        package_dir, 
-        'worlds', 
-        'playground.sdf'
     )
 
     rviz_config_file_dir = os.path.join(
@@ -78,14 +63,9 @@ def generate_launch_description():
     robot_controllers_file_dir = os.path.join(
         package_dir, 
         'config', 
-        'controller_gz_sim.yaml'
+        'controller.yaml'
     )
 
-    gazebo_params_file = os.path.join(
-        package_dir, 
-        'config', 
-        'gz_params.yaml'
-    )
     
     twist_mux_params_file = os.path.join(
         package_dir, 
@@ -98,14 +78,13 @@ def generate_launch_description():
         'xacro ', 
         robot_description_xacro_file, 
         ' use_ros2_control:=', 
-        use_ros2_control,
-        ' use_ros2_control_gz_sim:=',
-        use_ros2_control_gz_sim,        
+        use_ros2_control
         ])
     
     params = {
         'robot_description': ParameterValue(robot_description_config, value_type=str), 
-        'use_sim_time': use_sim_time,        
+        'use_sim_time': use_sim_time,
+        'use_ros2_control': use_ros2_control
     }
 
     # robot_state_publisher node
@@ -114,43 +93,9 @@ def generate_launch_description():
         executable='robot_state_publisher',
         output='screen',
         parameters=[params]
+        
     )
-    
-    # gz_bridge node
-    # format: '<topic_name>@/[/]<ros2_topic_type_name>@/[/]<gazebo_topic_type_name>',
-    # ros2 topic type <topic_name> to check topi type_name in ros2
-    # gz topic -t <topic_name> -i to check topic type_name in gazebo
-    node_gz_bridge = Node(
-        package='ros_gz_bridge',
-        executable='parameter_bridge',
-        arguments=[
-            
-            # General
-            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
-
-            # Gazebo_Control
-            '/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
-            '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
-            '/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model',
-            '/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V', 
-
-            # Lidar 
-            '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
-            '/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
-
-            # Camera
-            # '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
-            # '/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
-
-            # RGBD Camera
-            '/camera/depth/image_raw/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
-            '/camera/depth/image_raw/depth_image@sensor_msgs/msg/Image[gz.msgs.Image',
-            '/camera/depth/image_raw/image@sensor_msgs/msg/Image[gz.msgs.Image',
-            '/camera/depth/image_raw/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
-        ],
-        output='screen'
-    )
-
+ 
     # Image Transport Republishers Node
     camera = 'image_raw'
     depth_camera = 'depth/image_raw'
@@ -158,28 +103,6 @@ def generate_launch_description():
     node_image_republishers = [image_transport_republisher(transport, depth_camera) 
                           for transport in image_transports]
 
-    # gz launch world
-    gazebo = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([os.path.join(
-                    get_package_share_directory('ros_gz_sim'),
-                    'launch',
-                    'gz_sim.launch.py'
-                )]), 
-                launch_arguments=
-                {'gz_args': f'-r -v 4 {world_file_path}',
-                 'extra_gazebo_args': '--ros-args --params-file' + gazebo_params_file}.items()
-    )
-
-    # gz spawn robot entity 
-    node_gz_spawn_entity = Node(
-        package='ros_gz_sim',
-        executable='create',
-        output='screen',
-        arguments=['-topic', 'robot_description', 
-                '-name', 'minibot',
-                '-allow_renaming', 'true',
-                '-z', '0.1'],
-    )
 
     # rviz2 node
     node_rviz2 = Node(
@@ -187,11 +110,19 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         arguments=['-d', rviz_config_file_dir],
-        parameters=[{'use_sim_time': True}],
+        parameters=[{'use_sim_time': False}],
         output='both'
     )
+ 
+    # controller spawn
+    node_ros2_control = Node(
+        package="controller_manager",
+        executable="ros2_control_node",
+        parameters=[params, 
+                    robot_controllers_file_dir
+                    ],
+    )
 
-    # controller spawn 
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -233,26 +164,26 @@ def generate_launch_description():
         ],
     )
 
+    register_node_ros2_control = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action= node_robot_state_publisher,
+            on_start= [node_ros2_control],
+        )
+    )
+
     register_joint_state_broadcaster_spawner = RegisterEventHandler(
         event_handler=OnProcessStart(
-            target_action= node_gz_spawn_entity,
-            on_start= [joint_state_broadcaster_spawner],
+            target_action= node_ros2_control,
+            on_start=[joint_state_broadcaster_spawner],
         )
     )
 
     register_diff_drive_controller_spawner = RegisterEventHandler(
         event_handler=OnProcessStart(
             target_action= joint_state_broadcaster_spawner,
-            on_start= [diff_drive_controller_spawner],
+            on_start=[diff_drive_controller_spawner],
         )
     )
-
-    group_spawn_gz= GroupAction(
-        [gazebo, 
-         node_gz_spawn_entity,
-        ]
-    )
-
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -260,19 +191,18 @@ def generate_launch_description():
     # Add the nodes to the launch description
     ld.add_action(declare_use_sim_time)
     ld.add_action(declare_use_ros2_control)
-    ld.add_action(declare_use_ros2_control_gz_sim)
 
+    ld.add_action(register_node_ros2_control)
     ld.add_action(register_joint_state_broadcaster_spawner)
     ld.add_action(register_diff_drive_controller_spawner)
 
     ld.add_action(node_robot_state_publisher)
+    
     ld.add_action(node_twist_mux)
     ld.add_action(node_twist_stamper)
-    ld.add_action(node_gz_bridge)
     for node_republisher in node_image_republishers:
         ld.add_action(node_republisher)
-    ld.add_action(group_spawn_gz)
-    ld.add_action(node_rviz2)
+    # ld.add_action(node_rviz2)
 
     # Generate the launch description  
     return ld
