@@ -3,7 +3,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import RegisterEventHandler, DeclareLaunchArgument
+from launch.actions import RegisterEventHandler, DeclareLaunchArgument, IncludeLaunchDescription
 from launch.event_handlers import OnProcessStart
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
@@ -34,7 +34,8 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     use_ros2_control = LaunchConfiguration('use_ros2_control')
-    
+    lidar_serial_port = LaunchConfiguration('lidar_serial_port')
+
     declare_use_sim_time= DeclareLaunchArgument(
         'use_sim_time',
         default_value='false',
@@ -45,6 +46,12 @@ def generate_launch_description():
         'use_ros2_control',
         default_value='true',
         description='If true, use ros2_control'
+    )
+
+    declare_lidar_serial_port = DeclareLaunchArgument(
+        'lidar_serial_port',
+        default_value='/dev/ttyUSB0',
+        description='Specifying usb port to connected lidar'
     )
 
     # Declare the path to files
@@ -185,23 +192,36 @@ def generate_launch_description():
         )
     )
 
+    node_rplidar_drive = IncludeLaunchDescription(
+                PythonLaunchDescriptionSource([os.path.join(
+                    get_package_share_directory('sllidar_ros2'),
+                    'launch',
+                    'sllidar_c1_launch.py'
+                )]), 
+                launch_arguments={
+                    'serial_port': lidar_serial_port, 
+                    'frame_id': 'lidar_frame'
+                    }.items()
+    )
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
     # Add the nodes to the launch description
     ld.add_action(declare_use_sim_time)
     ld.add_action(declare_use_ros2_control)
+    ld.add_action(declare_lidar_serial_port)
 
     ld.add_action(register_node_ros2_control)
     ld.add_action(register_joint_state_broadcaster_spawner)
     ld.add_action(register_diff_drive_controller_spawner)
 
     ld.add_action(node_robot_state_publisher)
-    
     ld.add_action(node_twist_mux)
     ld.add_action(node_twist_stamper)
     for node_republisher in node_image_republishers:
         ld.add_action(node_republisher)
+    ld.add_action(node_rplidar_drive)
     # ld.add_action(node_rviz2)
 
     # Generate the launch description  
