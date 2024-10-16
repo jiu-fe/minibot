@@ -69,13 +69,13 @@ def generate_launch_description():
         'playground.sdf'
     )
 
-    rviz_config_file_dir = os.path.join(
+    rviz_config_file = os.path.join(
         package_dir, 
         'config', 
-        'gz_sim_config.rviz'
+        'sim_config.rviz'
     )
 
-    robot_controllers_file_dir = os.path.join(
+    robot_controllers_file = os.path.join(
         package_dir, 
         'config', 
         'controller_gz_sim.yaml'
@@ -186,7 +186,7 @@ def generate_launch_description():
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        arguments=['-d', rviz_config_file_dir],
+        arguments=['-d', rviz_config_file],
         parameters=[{'use_sim_time': True}],
         output='both'
     )
@@ -203,7 +203,7 @@ def generate_launch_description():
         executable="spawner",
         arguments=["diff_drive_controller", 
                    "--param-file", 
-                   robot_controllers_file_dir
+                   robot_controllers_file
         ],
     )
 

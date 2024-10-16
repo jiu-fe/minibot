@@ -10,7 +10,7 @@
     <joint name="lidar_joint" type="fixed">
         <parent link="chasis"/>
         <child link="lidar_frame"/>
-        <origin xyz="${lidar_offset_x} 0.0 ${lidar_offset_z}" rpy="0 0 0"/>    
+        <origin xyz="${lidar_offset_x} 0.0 ${lidar_offset_z}" rpy="0 0 ${pi}"/>    
     </joint>
 
     <link name="lidar_frame">

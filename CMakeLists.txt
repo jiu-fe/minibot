@@ -34,7 +34,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-add_executable(velocity_publisher ros2_control_demo_action/velocity_publisher.cpp)
+add_executable(velocity_publisher demo_publisher_node/velocity_publisher.cpp)
 ament_target_dependencies(velocity_publisher
   rclcpp
   geometry_msgs
@@ -46,7 +46,7 @@ install(TARGETS
 )
 
 install(
-  DIRECTORY config description launch worlds ros2_control_demo_action maps
+  DIRECTORY config description launch worlds demo_publisher_node maps
   DESTINATION share/${PROJECT_NAME}
 )
 
