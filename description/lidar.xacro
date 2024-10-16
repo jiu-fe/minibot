@@ -1,26 +1,31 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robot">
 
+    <xacro:property name="lidar_radius"             value="0.025"/>
+    <xacro:property name="lidar_thickness"          value="0.040"/>
+    <xacro:property name="lidar_offset_x"           value="0.230"/>
+    <xacro:property name="lidar_offset_z"           value="0.098"/>
+
     <!-- Lidar -->
     <joint name="lidar_joint" type="fixed">
         <parent link="chasis"/>
         <child link="lidar_frame"/>
-        <origin xyz="0.1 0.0 0.175" rpy="0 0 0"/>    
+        <origin xyz="${lidar_offset_x} 0.0 ${lidar_offset_z}" rpy="0 0 0"/>    
     </joint>
 
     <link name="lidar_frame">
         <visual>
             <geometry>
-                <cylinder radius="0.05" length="0.04"/>
+                <cylinder radius="${lidar_radius}" length="${lidar_thickness}"/>
             </geometry>
             <material name="orange"/>
         </visual>
         <collision>
             <geometry>
-                <cylinder radius="0.05" length="0.04"/>
+                <cylinder radius="${lidar_radius}" length="${lidar_thickness}"/>
             </geometry>
         </collision>
-        <xacro:inertial_cylinder mass="0.1" radius="0.05" length="0.04">
+        <xacro:inertial_cylinder mass="0.1" radius="${lidar_radius}" length="${lidar_thickness}">
             <origin xyz="0 0 0" rpy="0 0 0"/>
         </xacro:inertial_cylinder>
     </link>
