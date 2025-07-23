@@ -66,7 +66,10 @@ def generate_launch_description():
     world_file_path = os.path.join(
         package_dir, 
         'worlds', 
-        'playground.sdf'
+        'warehouse.sdf'
+        #'living_room.sdf'
+        #'tugbot_warehouse.sdf'
+        #'playground.sdf'
     )
 
     rviz_config_file = os.path.join(
@@ -196,6 +199,7 @@ def generate_launch_description():
         package="controller_manager",
         executable="spawner",
         arguments=["joint_state_broadcaster"],
+        output='screen',
     )
     
     diff_drive_controller_spawner = Node(
@@ -205,6 +209,7 @@ def generate_launch_description():
                    "--param-file", 
                    robot_controllers_file
         ],
+        output='screen',
     )
 
     node_twist_mux = Node(

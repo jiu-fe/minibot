@@ -62,7 +62,7 @@ def generate_launch_description():
     nav2_params_file = os.path.join(
         package_dir, 
         'config', 
-        'nav2_params.yaml'
+        'nav2_params_simple.yaml'
     )
 
     # joy node

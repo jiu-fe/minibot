@@ -24,8 +24,8 @@ def generate_launch_description():
 
     declare_map= DeclareLaunchArgument(
         'map',
-        default_value='./src/minibot/maps/map_test2.yaml',
-        description='If true, use simulated clock'
+        default_value='./src/minibot/maps/map_test4.yaml',
+        description='Map file path'
     )
 
     declare_use_slam_option = DeclareLaunchArgument(
@@ -35,12 +35,6 @@ def generate_launch_description():
     )  
 
     # Declare the path to files
-    joy_params_file = os.path.join(
-        get_package_share_directory(package_name), 
-        'config', 
-        'joystick_params.yaml' 
-    )
-
     mapper_params_online_async_file = os.path.join(
         package_dir, 
         'config', 
@@ -56,25 +50,9 @@ def generate_launch_description():
     nav2_params_file = os.path.join(
         package_dir, 
         'config', 
-        'nav2_params_simple.yaml'
+        'nav2_params_simple.yaml'  # 간단한 파라미터 파일 사용
     )
 
-    # joy node
-    joy_node = Node(
-        package='joy',
-        executable='joy_node',
-        parameters=[joy_params_file]
-    )    
-
-    # teleop node
-    teleop_node = Node(
-        package='teleop_twist_joy',
-        executable='teleop_node',
-        name= 'teleop_node',
-        parameters=[joy_params_file],
-        remappings=[('/cmd_vel','joy_vel')]
-    )   
-        
     # online_async_slam launch 
     online_async_slam = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
@@ -89,7 +67,7 @@ def generate_launch_description():
                 condition=IfCondition(PythonExpression(["'", use_slam_option, "' == 'online_async_slam'"]))         
     )
 
-    # nav2_nmapper_params_localization launch 
+    # mapper_params_localization launch 
     mapper_params_localization = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
                     get_package_share_directory('slam_toolbox'),
@@ -130,19 +108,13 @@ def generate_launch_description():
                 }.items()            
     )
 
-    
-
-     # Create the launch description and populate
+    # Create the launch description and populate
     ld = LaunchDescription()
     
     # Add the launch arguments
     ld.add_action(declare_use_sim_time)
     ld.add_action(declare_map)
     ld.add_action(declare_use_slam_option)
-
-    # Add the nodes to the launch description
-    ld.add_action(joy_node)
-    ld.add_action(teleop_node)
 
     # Add SLAM options
     ld.add_action(online_async_slam)
@@ -153,6 +125,4 @@ def generate_launch_description():
     ld.add_action(navigation)
 
     # Generate the launch description and 
-    return ld
-
-    
+    return ld 
